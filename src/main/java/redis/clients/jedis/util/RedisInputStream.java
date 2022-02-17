@@ -35,7 +35,7 @@ public class RedisInputStream extends FilterInputStream {
   }
 
   public RedisInputStream(InputStream in) {
-    this(in, 8192);
+    this(in, 16384);
   }
 
   public byte readByte() throws JedisConnectionException {
