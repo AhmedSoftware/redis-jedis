@@ -19,7 +19,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import redis.clients.jedis.versiontag.EnabledOnRedis;
+import redis.clients.jedis.versiontag.RedisType;
 
 import redis.clients.jedis.params.ScanParams;
 import redis.clients.jedis.resps.ScanResult;
@@ -283,6 +285,7 @@ public class SetCommandsTest extends JedisCommandsTestBase {
   }
 
   @Test
+  @EnabledOnRedis({RedisType.REDIS_UNSTABLE, RedisType.REDIS_7})
   public void smismember() {
     jedis.sadd("foo", "a", "b");
 
@@ -323,6 +326,7 @@ public class SetCommandsTest extends JedisCommandsTestBase {
   }
 
   @Test
+  @EnabledOnRedis({RedisType.REDIS_UNSTABLE, RedisType.REDIS_7})
   public void sinterstore() {
     jedis.sadd("foo", "a");
     jedis.sadd("foo", "b");
@@ -356,6 +360,7 @@ public class SetCommandsTest extends JedisCommandsTestBase {
   }
 
   @Test
+  @EnabledOnRedis({RedisType.REDIS_UNSTABLE, RedisType.REDIS_7})
   public void sintercard() {
     jedis.sadd("foo", "a");
     jedis.sadd("foo", "b");
