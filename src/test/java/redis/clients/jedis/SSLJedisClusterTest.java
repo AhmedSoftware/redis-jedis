@@ -22,20 +22,36 @@ public class SSLJedisClusterTest extends JedisClusterTestBase {
   private static final int DEFAULT_REDIRECTIONS = 5;
   private static final ConnectionPoolConfig DEFAULT_POOL_CONFIG = new ConnectionPoolConfig();
 
-  private final HostAndPortMapper hostAndPortMap = (HostAndPort hostAndPort) -> {
+  static final HostAndPortMapper hostAndPortMap = (HostAndPort hostAndPort) -> {
     String host = hostAndPort.getHost();
     int port = hostAndPort.getPort();
     if (host.equals("127.0.0.1")) {
       host = "localhost";
       port = port + 1000;
+    } else if (host.startsWith("172")) {
+      host = "localhost";
+      port = mapClusterPort(hostAndPort.getHost(), hostAndPort.getPort());
     }
     return new HostAndPort(host, port);
   };
 
+  private static int mapClusterPort(String host, int port) {
+    String[] segments = host.split("\\.");
+    if (segments.length == 4) {
+      int lastSegment = Integer.parseInt(segments[3]);
+      int delta = lastSegment - 31; // 172.20.0.31 is the first IP in the cluster
+      return 6379 + delta + 2000; // stunnel serves OSS cluster nodes on 8379...
+    }
+    return port;
+  }
+
   // don't map IP addresses so that we try to connect with host 127.0.0.1
-  private final HostAndPortMapper portMap = (HostAndPort hostAndPort) -> {
+  static final HostAndPortMapper portMap = (HostAndPort hostAndPort) -> {
     if ("localhost".equals(hostAndPort.getHost())) {
       return hostAndPort;
+    }
+    if (hostAndPort.getHost().startsWith("172")) {
+      return new HostAndPort("127.0.0.1", mapClusterPort(hostAndPort.getHost(), hostAndPort.getPort()));
     }
     return new HostAndPort(hostAndPort.getHost(), hostAndPort.getPort() + 1000);
   };
@@ -53,9 +69,9 @@ public class SSLJedisClusterTest extends JedisClusterTestBase {
 //      Map<String, JedisPool> clusterNodes = jc.getClusterNodes();
       Map<String, ?> clusterNodes = jc.getClusterNodes();
       assertEquals(3, clusterNodes.size());
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7379"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7380"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7381"));
+      assertTrue(clusterNodes.containsKey("172.20.0.31:6379"));
+      assertTrue(clusterNodes.containsKey("172.20.0.32:6379"));
+      assertTrue(clusterNodes.containsKey("172.20.0.33:6379"));
 
       jc.get("foo");
     }
@@ -66,9 +82,9 @@ public class SSLJedisClusterTest extends JedisClusterTestBase {
 //      Map<String, JedisPool> clusterNodes = jc2.getClusterNodes();
       Map<String, ?> clusterNodes = jc2.getClusterNodes();
       assertEquals(3, clusterNodes.size());
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7379"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7380"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7381"));
+      assertTrue(clusterNodes.containsKey("172.20.0.31:6379"));
+      assertTrue(clusterNodes.containsKey("172.20.0.32:6379"));
+      assertTrue(clusterNodes.containsKey("172.20.0.33:6379"));
       jc2.get("foo");
     }
   }
@@ -81,9 +97,9 @@ public class SSLJedisClusterTest extends JedisClusterTestBase {
 //      Map<String, JedisPool> clusterNodes = jc.getClusterNodes();
       Map<String, ?> clusterNodes = jc.getClusterNodes();
       assertEquals(3, clusterNodes.size());
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7379"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7380"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7381"));
+      assertTrue(clusterNodes.containsKey("172.20.0.31:6379"));
+      assertTrue(clusterNodes.containsKey("172.20.0.32:6379"));
+      assertTrue(clusterNodes.containsKey("172.20.0.33:6379"));
     }
   }
 
@@ -226,16 +242,16 @@ public class SSLJedisClusterTest extends JedisClusterTestBase {
 //      Map<String, JedisPool> clusterNodes = jc.getClusterNodes();
       Map<String, ?> clusterNodes = jc.getClusterNodes();
       assertEquals(3, clusterNodes.size());
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7379"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7380"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7381"));
+      assertTrue(clusterNodes.containsKey("172.20.0.31:6379"));
+      assertTrue(clusterNodes.containsKey("172.20.0.32:6379"));
+      assertTrue(clusterNodes.containsKey("172.20.0.33:6379"));
     }
   }
 
-  public class LocalhostVerifier extends BasicHostnameVerifier {
+  public static class LocalhostVerifier extends BasicHostnameVerifier {
     @Override
     public boolean verify(String hostname, SSLSession session) {
-      if (hostname.equals("127.0.0.1")) {
+      if (hostname.equals("127.0.0.1") || hostname.startsWith("172.")) {
         hostname = "localhost";
       }
       return super.verify(hostname, session);

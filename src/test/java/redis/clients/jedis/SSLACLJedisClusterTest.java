@@ -2,6 +2,8 @@ package redis.clients.jedis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static redis.clients.jedis.SSLJedisClusterTest.hostAndPortMap;
+import static redis.clients.jedis.SSLJedisClusterTest.portMap;
 
 import java.util.Collections;
 import java.util.Map;
@@ -16,30 +18,13 @@ import org.junit.Test;
 
 import redis.clients.jedis.exceptions.JedisClusterOperationException;
 import redis.clients.jedis.SSLJedisTest.BasicHostnameVerifier;
+import redis.clients.jedis.util.JedisClusterTestUtil;
 import redis.clients.jedis.util.RedisVersionUtil;
 
 public class SSLACLJedisClusterTest extends JedisClusterTestBase {
 
   private static final int DEFAULT_REDIRECTIONS = 5;
   private static final ConnectionPoolConfig DEFAULT_POOL_CONFIG = new ConnectionPoolConfig();
-
-  private final HostAndPortMapper hostAndPortMap = (HostAndPort hostAndPort) -> {
-    String host = hostAndPort.getHost();
-    int port = hostAndPort.getPort();
-    if (host.equals("127.0.0.1")) {
-      host = "localhost";
-      port = port + 1000;
-    }
-    return new HostAndPort(host, port);
-  };
-
-  // don't map IP addresses so that we try to connect with host 127.0.0.1
-  private final HostAndPortMapper portMap = (HostAndPort hostAndPort) -> {
-    if ("localhost".equals(hostAndPort.getHost())) {
-      return hostAndPort;
-    }
-    return new HostAndPort(hostAndPort.getHost(), hostAndPort.getPort() + 1000);
-  };
 
   @BeforeClass
   public static void prepare() {
@@ -56,9 +41,9 @@ public class SSLACLJedisClusterTest extends JedisClusterTestBase {
             .hostAndPortMapper(hostAndPortMap).build(), DEFAULT_REDIRECTIONS, DEFAULT_POOL_CONFIG)) {
       Map clusterNodes = jc.getClusterNodes();
       assertEquals(3, clusterNodes.size());
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7379"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7380"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7381"));
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(1)));
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(2)));
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(3)));
       jc.get("foo");
     }
 
@@ -67,9 +52,9 @@ public class SSLACLJedisClusterTest extends JedisClusterTestBase {
             .hostAndPortMapper(hostAndPortMap).build(), DEFAULT_REDIRECTIONS, DEFAULT_POOL_CONFIG)) {
       Map clusterNodes = jc2.getClusterNodes();
       assertEquals(3, clusterNodes.size());
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7379"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7380"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7381"));
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(1)));
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(2)));
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(3)));
       jc2.get("foo");
     }
   }
@@ -82,9 +67,9 @@ public class SSLACLJedisClusterTest extends JedisClusterTestBase {
 //      Map<String, JedisPool> clusterNodes = jc.getClusterNodes();
       Map<String, ?> clusterNodes = jc.getClusterNodes();
       assertEquals(3, clusterNodes.size());
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7379"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7380"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7381"));
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(1)));
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(2)));
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(3)));
     }
   }
 
@@ -151,7 +136,7 @@ public class SSLACLJedisClusterTest extends JedisClusterTestBase {
   @Test
   public void connectWithCustomHostNameVerifier() {
     HostnameVerifier hostnameVerifier = new BasicHostnameVerifier();
-    HostnameVerifier localhostVerifier = new LocalhostVerifier();
+    HostnameVerifier localhostVerifier = new SSLJedisClusterTest.LocalhostVerifier();
 
     try (JedisCluster jc = new JedisCluster(new HostAndPort("localhost", 8379),
         DefaultJedisClientConfig.builder().user("default").password("cluster").ssl(true)
@@ -225,19 +210,9 @@ public class SSLACLJedisClusterTest extends JedisClusterTestBase {
             .hostAndPortMapper(nullHostAndPortMap).build(), DEFAULT_REDIRECTIONS, DEFAULT_POOL_CONFIG)) {
       Map clusterNodes = jc.getClusterNodes();
       assertEquals(3, clusterNodes.size());
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7379"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7380"));
-      assertTrue(clusterNodes.containsKey("127.0.0.1:7381"));
-    }
-  }
-
-  public class LocalhostVerifier extends BasicHostnameVerifier {
-    @Override
-    public boolean verify(String hostname, SSLSession session) {
-      if (hostname.equals("127.0.0.1")) {
-        hostname = "localhost";
-      }
-      return super.verify(hostname, session);
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(1)));
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(2)));
+      assertTrue(clusterNodes.containsKey(JedisClusterTestUtil.getClusterIpWithPort(3)));
     }
   }
 }
