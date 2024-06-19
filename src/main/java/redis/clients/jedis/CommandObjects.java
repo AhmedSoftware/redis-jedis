@@ -4440,7 +4440,12 @@ public class CommandObjects {
 
   private class SearchProfileResponseBuilder<T> extends Builder<Map.Entry<T, Map<String, Object>>> {
 
-    private static final String PROFILE_STR = "profile";
+    private static final String PROFILE_1_STR = "profile";
+
+    private static final String RESULTS_2_STR = "Results";
+    private static final String PROFILE_2_STR = "Profile";
+
+    private static final String SHARDS_STR = "Shards";
 
     private final Builder<T> replyBuilder;
 
@@ -4454,14 +4459,30 @@ public class CommandObjects {
       if (list == null || list.isEmpty()) return null;
 
       if (list.get(0) instanceof KeyValue) {
+        Object results = null, profile = null;
         for (KeyValue keyValue : (List<KeyValue>) data) {
-          if (PROFILE_STR.equals(BuilderFactory.STRING.build(keyValue.getKey()))) {
-            return KeyValue.of(replyBuilder.build(data),
-                BuilderFactory.AGGRESSIVE_ENCODED_OBJECT_MAP.build(keyValue.getValue()));
+          String keyString = BuilderFactory.STRING.build(keyValue.getKey());
+          Object valueRaw = keyValue.getValue();
+          if (PROFILE_1_STR.equals(keyString)) {
+            profile = valueRaw;
+            results = data;
+            break;
+          } else if (RESULTS_2_STR.equals(keyString)) {
+            results = valueRaw;
+          } else if (PROFILE_2_STR.equals(keyString)) {
+            profile = valueRaw;
           }
+        }
+        if (results != null) {
+          return KeyValue.of(replyBuilder.build(results),
+              BuilderFactory.AGGRESSIVE_ENCODED_OBJECT_MAP.build(profile));
         }
       }
 
+//      if (SHARDS_STR.equals(BuilderFactory.STRING.build(((List) list.get(1)).get(0)))) {
+//        return KeyValue.of(replyBuilder.build(list.get(0)),
+//          SearchBuilderFactory.SEARCH_PROFILE_PROFILE.build(((List) ((List) list.get(1)).get(1)).get(0)));
+//      }
       return KeyValue.of(replyBuilder.build(list.get(0)),
           SearchBuilderFactory.SEARCH_PROFILE_PROFILE.build(list.get(1)));
     }
