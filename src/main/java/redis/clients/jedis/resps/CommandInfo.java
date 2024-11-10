@@ -2,6 +2,7 @@ package redis.clients.jedis.resps;
 
 import redis.clients.jedis.Builder;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -135,9 +136,12 @@ public class CommandInfo {
       long firstKey = LONG.build(commandData.get(3));
       long lastKey = LONG.build(commandData.get(4));
       long step = LONG.build(commandData.get(5));
-      List<String> aclCategories = STRING_LIST.build(commandData.get(6));
-      List<String> tips = STRING_LIST.build(commandData.get(7));
-      Map<String, CommandInfo> subcommands = COMMAND_INFO_RESPONSE.build(commandData.get(9));
+      // (as of Redis 6.0)
+      List<String> aclCategories = commandData.size()>=6?STRING_LIST.build(commandData.get(6)): Collections.emptyList();
+
+      //  (as of Redis 7.0)
+      List<String> tips = commandData.size()>=8?STRING_LIST.build(commandData.get(7)):Collections.emptyList();
+      Map<String, CommandInfo> subcommands = commandData.size()>=10?COMMAND_INFO_RESPONSE.build(commandData.get(9)):Collections.EMPTY_MAP;
 
       return new CommandInfo(name, arity, flags, firstKey, lastKey, step, aclCategories, tips, subcommands);
     }
