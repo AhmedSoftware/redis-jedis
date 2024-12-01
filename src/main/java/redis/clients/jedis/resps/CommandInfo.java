@@ -2,7 +2,6 @@ package redis.clients.jedis.resps;
 
 import redis.clients.jedis.Builder;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
